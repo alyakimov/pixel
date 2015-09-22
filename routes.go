@@ -22,4 +22,10 @@ var routes = Routes{
         "/",
         Index,
     },
+    Route{
+        "Redirect",
+        "GET",
+        "/r",
+        Redirect,
+    },
 }

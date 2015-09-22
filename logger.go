@@ -9,15 +9,15 @@ import (
 
 
 func Logger(inner http.Handler, name string) http.Handler {
-    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+    return http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
         start := time.Now()
 
-        inner.ServeHTTP(w, r)
+        inner.ServeHTTP(response, request)
 
         log.Printf(
             "%s\t%s\t%s\t%s",
-            r.Method,
-            r.RequestURI,
+            request.Method,
+            request.RequestURI,
             name,
             time.Since(start),
         )
