@@ -53,32 +53,13 @@ func Index(response http.ResponseWriter, request *http.Request) {
         log.Fatal(err)
     }
 
-    stmt, err := connect.Prepare("SELECT id FROM campaigns where status = 1 AND name = ?")
-    if err != nil {
-        log.Fatal(err)
-    }
-    row := stmt.QueryRow(campaignName)
+    campaign, err := GetCampaignByName(connect, campaignName)
 
-    var campaignId int    
-    row.Scan(&campaignId)
+    if err == nil {
 
-    if campaignId != 0 {
+        campaignLog.CampaignId = campaign.Id
 
-        campaignLog.CampaignId = campaignId
-
-        stmt, err = connect.Prepare("INSERT INTO campaigns_log (campaign_id, uuid, msisdn, remote_ip, user_agent, referer, created) VALUES (?, ?, ?, ?, ?, ?, NOW())")
-        if err != nil {
-            log.Fatal(err)
-        }
-
-        _, err := stmt.Exec(
-            campaignLog.CampaignId, 
-            campaignLog.Uuid, 
-            campaignLog.Msisdn, 
-            campaignLog.RemoteIp, 
-            campaignLog.UserAgent, 
-            campaignLog.Referer,
-        )
+        err = AddCampaignLog(connect, campaignLog)
         if err != nil {
             log.Fatal(err)
         }
