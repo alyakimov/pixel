@@ -4,6 +4,7 @@ package main
 import (
     "io"
     "log"
+    "time"
     "errors"
     "strings"
     "net/http"
@@ -69,9 +70,7 @@ func Index(response http.ResponseWriter, request *http.Request) {
 }
 
 
-func Redirect(response http.ResponseWriter, request *http.Request) {   
-
-    // guidNotFound := "...................."
+func Redirect(response http.ResponseWriter, request *http.Request) {
     
     backUrl, err := getBackUrl(request)
     
@@ -94,17 +93,18 @@ func Redirect(response http.ResponseWriter, request *http.Request) {
         log.Fatal(err)
     }
 
-    stmt, err := connect.Prepare("SELECT uuid FROM defcodes where msisdn = ?")
+    defcode, err := GetUuidByMsisdn(connect, msisdn)
+    
     if err != nil {
-        log.Fatal(err)
+    	uuid := "...................."
+    } else {
+    	uuid := defcode.Uuid	
     }
-    row := stmt.QueryRow(msisdn)
 
-    var uuid string    
-    row.Scan(&uuid)
+    timestamp := getUnixTimestamp()
 
     backUrl = strings.Replace(backUrl, "$UUID", uuid, 1)
-    backUrl = strings.Replace(backUrl, "$RND", "12345", 1)
+    backUrl = strings.Replace(backUrl, "$RND", timestamp, 1)
 
     http.Redirect(response, request, backUrl, 301)
 }
@@ -172,5 +172,9 @@ func getUuid(request *http.Request) (string, error) {
     } else {
         return "", errors.New("uuid is empty")
     }
+}
+
+func getUnixTimestamp() int32 {
+	return int32(time.Now().Unix())
 }
 
