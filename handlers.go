@@ -63,9 +63,7 @@ func Index(response http.ResponseWriter, request *http.Request) {
 }
 
 
-func Redirect(response http.ResponseWriter, request *http.Request) {   
-
-    guidNotFound := "...................."
+func Redirect(response http.ResponseWriter, request *http.Request) {
     
     backUrl, err := getBackUrl(request)
     
@@ -83,13 +81,17 @@ func Redirect(response http.ResponseWriter, request *http.Request) {
     defer db.Close()
 
     defcode, err := GetDefcodeByMsisdn(db, msisdn)
+    
     if err != nil {
-        backUrl = strings.Replace(backUrl, "$UUID", guidNotFound, 1)
-        backUrl = strings.Replace(backUrl, "$RND", "12345", 1)
+        uuid := "...................."
     } else {
-        backUrl = strings.Replace(backUrl, "$UUID", defcode.Uuid, 1)
-        backUrl = strings.Replace(backUrl, "$RND", "12345", 1)
+        uuid := defcode.Uuid    
     }
+
+    timestamp := getUnixTimestamp()
+
+    backUrl = strings.Replace(backUrl, "$UUID", uuid, 1)
+    backUrl = strings.Replace(backUrl, "$RND", timestamp, 1)
 
     http.Redirect(response, request, backUrl, 301)
 }
@@ -157,5 +159,9 @@ func getUuid(request *http.Request) (string, error) {
     } else {
         return "", errors.New("uuid is empty")
     }
+}
+
+func getUnixTimestamp() int32 {
+    return int32(time.Now().Unix())
 }
 
