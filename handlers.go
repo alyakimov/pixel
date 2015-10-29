@@ -8,9 +8,6 @@ import (
     "strings"
     "net/http"
     "encoding/base64"
-    "database/sql"
-    _ "github.com/go-sql-driver/mysql"
-    "github.com/spf13/viper"
 )
 
 
@@ -42,24 +39,21 @@ func Index(response http.ResponseWriter, request *http.Request) {
         RemoteIp: remoteIp, 
         UserAgent: userAgent, 
         Referer: referer,
-    }    
-
-    dsl := viper.GetString("connections.onepixel")
-
-    connect, err := sql.Open("mysql", dsl)
-    defer connect.Close()
-    
-    if err != nil {
-        log.Fatal(err)
     }
 
-    campaign, err := GetCampaignByName(connect, campaignName)
+    db := GetConnection()
+    defer db.Close()
 
-    if err == nil {
+    campaign, err := GetCampaignByName(db, campaignName)
+
+    if err != nil {
+        log.Println(err)
+    
+    } else {
 
         campaignLog.CampaignId = campaign.Id
 
-        err = AddCampaignLog(connect, campaignLog)
+        err = AddCampaignLog(db, campaignLog)
         if err != nil {
             log.Fatal(err)
         }
@@ -71,7 +65,7 @@ func Index(response http.ResponseWriter, request *http.Request) {
 
 func Redirect(response http.ResponseWriter, request *http.Request) {   
 
-    // guidNotFound := "...................."
+    guidNotFound := "...................."
     
     backUrl, err := getBackUrl(request)
     
@@ -85,26 +79,17 @@ func Redirect(response http.ResponseWriter, request *http.Request) {
         log.Fatal(err)
     }
 
-    dsl := viper.GetString("connections.onepixel")
+    db := GetConnection()
+    defer db.Close()
 
-    connect, err := sql.Open("mysql", dsl)
-    defer connect.Close()
-    
+    defcode, err := GetDefcodeByMsisdn(db, msisdn)
     if err != nil {
-        log.Fatal(err)
+        backUrl = strings.Replace(backUrl, "$UUID", guidNotFound, 1)
+        backUrl = strings.Replace(backUrl, "$RND", "12345", 1)
+    } else {
+        backUrl = strings.Replace(backUrl, "$UUID", defcode.Uuid, 1)
+        backUrl = strings.Replace(backUrl, "$RND", "12345", 1)
     }
-
-    stmt, err := connect.Prepare("SELECT uuid FROM defcodes where msisdn = ?")
-    if err != nil {
-        log.Fatal(err)
-    }
-    row := stmt.QueryRow(msisdn)
-
-    var uuid string    
-    row.Scan(&uuid)
-
-    backUrl = strings.Replace(backUrl, "$UUID", uuid, 1)
-    backUrl = strings.Replace(backUrl, "$RND", "12345", 1)
 
     http.Redirect(response, request, backUrl, 301)
 }

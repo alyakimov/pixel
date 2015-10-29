@@ -61,3 +61,12 @@ func AddCampaignLog(db *sql.DB, campaignLog CampaignLog) error {
     return err
 }
 
+func GetDefcodeByMsisdn(db *sql.DB, msisdn string) (*Defcode, error) {
+    const query = "SELECT uuid, msisdn FROM defcodes where msisdn = ?"
+
+    var retval Defcode
+    err := db.QueryRow(query, msisdn).Scan(&retval.Uuid, &retval.Msisdn)    
+
+    return &retval, err
+}
+

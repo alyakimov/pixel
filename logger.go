@@ -8,17 +8,18 @@ import (
 )
 
 
-func Logger(inner http.Handler, name string) http.Handler {
+func Logger(next http.Handler, name string) http.Handler {
     return http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
         start := time.Now()
 
-        inner.ServeHTTP(response, request)
+        next.ServeHTTP(response, request)
 
         log.Printf(
-            "%s\t%s\t%s\t%s",
+            "%s\t%s\t%s\t(%s)\t%s",
+            name,
             request.Method,
             request.RequestURI,
-            name,
+            request.RemoteAddr,            
             time.Since(start),
         )
     })

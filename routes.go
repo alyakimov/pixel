@@ -17,15 +17,21 @@ type Routes []Route
 
 var routes = Routes{
     Route{
-        "Index",
-        "GET",
-        "/",
-        Index,
-    },
-    Route{
         "Redirect",
         "GET",
         "/r",
         Redirect,
     },
+    Route{
+        "Index",
+        "GET",
+        "/{(.*)}",
+        Index,
+    }, 
+    Route{
+        "Index",
+        "GET",
+        "/",
+        Index,
+    },   
 }

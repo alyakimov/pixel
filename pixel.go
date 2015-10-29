@@ -18,9 +18,9 @@ func main() {
     err := viper.ReadInConfig()
     if err != nil {
         panic(fmt.Errorf("Fatal error config file: %s \n", err))
-    }
+    }      
 
     router := NewRouter()
 
-    log.Fatal(http.ListenAndServe(":8080", router))
+    log.Fatal(http.ListenAndServe(viper.GetString("port"), router))
 }
