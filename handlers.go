@@ -75,7 +75,8 @@ func Redirect(response http.ResponseWriter, request *http.Request) {
     msisdn, err := getMsisdn(request)
 
     if err != nil {
-        log.Fatal(err)
+        redirect(response, request, "....................", backUrl)
+        return
     }
 
     db := GetConnection()
@@ -89,12 +90,7 @@ func Redirect(response http.ResponseWriter, request *http.Request) {
         uuid := defcode.Uuid    
     }
 
-    timestamp := getUnixTimestamp()
-
-    backUrl = strings.Replace(backUrl, "$UUID", uuid, 1)
-    backUrl = strings.Replace(backUrl, "$RND", timestamp, 1)
-
-    http.Redirect(response, request, backUrl, 301)
+    redirect(response, request, uuid, backUrl)
 }
 
 
@@ -106,6 +102,15 @@ func writeImage(response http.ResponseWriter){
 
     output, _ := base64.StdEncoding.DecodeString("R0lGODlhAQABAIAAAP///wAAACwAAAAAAQABAAACAkQBADs=")
     io.WriteString(response, string(output))
+}
+
+func redirect(response http.ResponseWriter, request *http.Request, uuid string, backUrl string) {
+    timestamp := getUnixTimestamp()
+
+    backUrl = strings.Replace(backUrl, "$UUID", uuid, 1)
+    backUrl = strings.Replace(backUrl, "$RND", timestamp, 1)
+
+    http.Redirect(response, request, backUrl, 301)
 }
 
 func getBackUrl(request *http.Request) (string, error) {
