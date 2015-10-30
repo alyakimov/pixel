@@ -139,6 +139,16 @@ func getMsisdn(request *http.Request) (string, error) {
     }
 }
 
+func getCookieMsisdn(request *http.Request) (string, error){
+    cookieMsisdn, err := GetSecretCookie(request, "msisdn") 
+
+    return cookieMsisdn, err
+}
+
+func setCookieMsisdn(response http.ResponseWriter, value string){
+    SetSecretCookie(response, "msisdn", value)
+}
+
 func getRemoteIp(request *http.Request) string {
     remoteIp := strings.Split(request.RemoteAddr, ":")[0]
     return remoteIp

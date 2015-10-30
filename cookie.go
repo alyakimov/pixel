@@ -16,7 +16,7 @@ import (
 )
 
 
-func SetSecretCookie(response http.ResponseWriter, name string, value string, version int) {
+func SetSecretCookie(response http.ResponseWriter, name string, value string) {
 
     secret := viper.GetString("cookie.secret")
     version := viper.GetString("cookie.version")
