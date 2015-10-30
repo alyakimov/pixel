@@ -7,20 +7,44 @@ import (
     "errors"
     "strings"
     "strconv"
+    "net/http"
     "crypto/hmac"
     "crypto/sha256"
     "encoding/hex"
     "encoding/base64"
+    "github.com/spf13/viper"
 )
 
 
-func SetSecretCookie(name string, value string, version int) (string, error) {
-    return "", nil
+func SetSecretCookie(response http.ResponseWriter, name string, value string, version int) {
+
+    secret := viper.GetString("cookie.secret")
+    version := viper.GetString("cookie.version")
+    keyVersion := viper.GetString("cookie.key_version")
+
+    expiration := time.Now().Add(365 * 24 * time.Hour)
+    signedValue := createSignedValue(secret, name, value, version, keyVersion)
+
+    cookie := http.Cookie{Name: name, Value: signedValue, Expires: expiration}
+    http.SetCookie(response, &cookie)
 }
 
 
-func GetSecretCookie(name string) (string, error) {
-    return "", nil
+func GetSecretCookie(request *http.Request, name string) (string, error) {
+
+    cookie, err := request.Cookie(name)
+
+    if err != nil {
+        return "", errors.New("cookie not found")
+    }
+
+    secret := viper.GetString("cookie.secret")
+    maxAgeDays := viper.GetString("cookie.max_age_days")
+    version := viper.GetString("cookie.version")
+
+    value, err := decodeSignedValue(secret, name, cookie, maxAgeDays, version)
+
+    return value, err
 }
 
 
@@ -185,18 +209,4 @@ func createSignatureV2(secret string, message string) string {
 
 func getUnixTimestamp() int {
     return int(time.Now().Unix())
-}
-
-func main() {
-
-    secret := "qwerty"
-    name := "msisdn"
-    value := "71234567890"
-    version := 2
-    keyVersion := 100 
-    maxAgeDays := 31
-
-    cookie, _ := createSignedValue(secret, name, value, version, keyVersion) 
-
-    fmt.Println(decodeSignedValue(secret, name, cookie, maxAgeDays, version))
 }
