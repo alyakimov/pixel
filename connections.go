@@ -18,7 +18,9 @@ func GetConnection() *sql.DB {
         return db
     
     } else {
-        db, err := sql.Open("mysql", viper.GetString("connections.onepixel.dsl"))
+        
+        var err error        
+        db, err = sql.Open("mysql", viper.GetString("connections.onepixel.dsl"))
 
         if err != nil {
             log.Fatalf("Error on initializing database connection: %s", err.Error())

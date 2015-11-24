@@ -4,7 +4,6 @@ package main
 import (
     "io"
     "log"
-    "time"
     "errors"
     "strings"
     "net/http"
@@ -43,7 +42,6 @@ func Index(response http.ResponseWriter, request *http.Request) {
     }
 
     db := GetConnection()
-    defer db.Close()
 
     campaign, err := GetCampaignByName(db, campaignName)
 
@@ -66,6 +64,12 @@ func Index(response http.ResponseWriter, request *http.Request) {
 
 func Redirect(response http.ResponseWriter, request *http.Request) {
     
+    campaignName, err := getCampaignName(request)
+    
+    if err != nil {
+        log.Fatal(err)
+    }
+
     backUrl, err := getBackUrl(request)
     
     if err != nil {
@@ -73,19 +77,48 @@ func Redirect(response http.ResponseWriter, request *http.Request) {
     }
 
     msisdn, err := getMsisdn(request)
+    remoteIp := getRemoteIp(request)
+    userAgent := getUserAgent(request)
+    referer := getReferer(request)
+    uuid, _ := getUuid(request)
 
-    if err != nil {
-        redirect(response, request, "....................", backUrl)
-        return
+    campaignLog := CampaignLog{
+        CampaignId: 0, 
+        Uuid: uuid, 
+        Msisdn: msisdn, 
+        RemoteIp: remoteIp, 
+        UserAgent: userAgent, 
+        Referer: referer,
     }
 
     db := GetConnection()
-    defer db.Close()
+
+    campaign, err := GetCampaignByName(db, campaignName)
+
+    if err != nil {
+        log.Fatal(err)
+    
+    } else {
+
+        campaignLog.CampaignId = campaign.Id
+
+        err = AddCampaignLog(db, campaignLog)
+        if err != nil {
+            log.Fatal(err)
+        }
+    }
+
+    var defaultGuid string = getDefaultGuid()
+
+    if err != nil {
+        redirect(response, request, defaultGuid, backUrl)
+        return
+    }    
 
     defcode, err := GetDefcodeByMsisdn(db, msisdn)
     
     if err != nil {
-        uuid := "...................."
+        uuid := defaultGuid
     } else {
         uuid := defcode.Uuid    
     }
@@ -108,7 +141,7 @@ func redirect(response http.ResponseWriter, request *http.Request, uuid string, 
     timestamp := getUnixTimestamp()
 
     backUrl = strings.Replace(backUrl, "$UUID", uuid, 1)
-    backUrl = strings.Replace(backUrl, "$RND", timestamp, 1)
+    backUrl = strings.Replace(backUrl, "$RND", string(timestamp), 1)
 
     http.Redirect(response, request, backUrl, 301)
 }
@@ -177,7 +210,7 @@ func getUuid(request *http.Request) (string, error) {
     }
 }
 
-func getUnixTimestamp() int32 {
-    return int32(time.Now().Unix())
+func getDefaultGuid() string {
+    return "...................."
 }
 

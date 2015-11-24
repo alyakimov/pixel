@@ -1,6 +1,7 @@
 package main
 
 import (
+    "log"
     "fmt"
     "time"
     "regexp"
@@ -19,14 +20,16 @@ import (
 func SetSecretCookie(response http.ResponseWriter, name string, value string) {
 
     secret := viper.GetString("cookie.secret")
-    version := viper.GetString("cookie.version")
-    keyVersion := viper.GetString("cookie.key_version")
+    version := viper.GetInt("cookie.version")
+    keyVersion := viper.GetInt("cookie.key_version")
 
     expiration := time.Now().Add(365 * 24 * time.Hour)
-    signedValue := createSignedValue(secret, name, value, version, keyVersion)
+    signedValue, err := createSignedValue(secret, name, value, version, keyVersion)
 
-    cookie := http.Cookie{Name: name, Value: signedValue, Expires: expiration}
-    http.SetCookie(response, &cookie)
+    if err == nil {
+        cookie := http.Cookie{Name: name, Value: signedValue, Expires: expiration}
+        http.SetCookie(response, &cookie)
+    }
 }
 
 
@@ -38,11 +41,13 @@ func GetSecretCookie(request *http.Request, name string) (string, error) {
         return "", errors.New("cookie not found")
     }
 
-    secret := viper.GetString("cookie.secret")
-    maxAgeDays := viper.GetString("cookie.max_age_days")
-    version := viper.GetString("cookie.version")
+    cookieValue := cookie.Value
 
-    value, err := decodeSignedValue(secret, name, cookie, maxAgeDays, version)
+    secret := viper.GetString("cookie.secret")
+    maxAgeDays := viper.GetInt("cookie.max_age_days")
+    version := viper.GetInt("cookie.version")
+
+    value, err := decodeSignedValue(secret, name, cookieValue, maxAgeDays, version)
 
     return value, err
 }
@@ -209,4 +214,23 @@ func createSignatureV2(secret string, message string) string {
 
 func getUnixTimestamp() int {
     return int(time.Now().Unix())
+}
+
+func main(){
+    
+    secret := "qwerty"
+    name := "msisdn"
+    value := "71234567890"
+    version := 2
+    keyVersion := 100 
+    maxAgeDays := 31
+
+    cookie, err := createSignedValue(secret, name, value, version, keyVersion)
+
+    if err != nil {
+        log.Fatal(err)
+    }
+    fmt.Println(cookie)
+
+    fmt.Println(decodeSignedValue(secret, name, cookie, maxAgeDays, version))
 }
