@@ -215,22 +215,3 @@ func createSignatureV2(secret string, message string) string {
 func getUnixTimestamp() int {
     return int(time.Now().Unix())
 }
-
-func main(){
-    
-    secret := "qwerty"
-    name := "msisdn"
-    value := "71234567890"
-    version := 2
-    keyVersion := 100 
-    maxAgeDays := 31
-
-    cookie, err := createSignedValue(secret, name, value, version, keyVersion)
-
-    if err != nil {
-        log.Fatal(err)
-    }
-    fmt.Println(cookie)
-
-    fmt.Println(decodeSignedValue(secret, name, cookie, maxAgeDays, version))
-}
