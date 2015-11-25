@@ -13,7 +13,7 @@ func main() {
 
     viper.SetConfigName("onepixel")
     viper.SetConfigType("yaml")
-    viper.AddConfigPath("/Users/push/Dropbox/golang/config")
+    viper.AddConfigPath(".")
     
     err := viper.ReadInConfig()
     if err != nil {

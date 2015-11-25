@@ -3,8 +3,9 @@ package main
 
 import (
     "io"
-    "log"
+    "log"    
     "errors"
+    "strconv"
     "strings"
     "net/http"
     "encoding/base64"
@@ -16,6 +17,7 @@ func Index(response http.ResponseWriter, request *http.Request) {
     campaignName, err := getCampaignName(request)
     
     if err != nil {
+        log.Println(err)
         writeImage(response)
         return
     }
@@ -23,8 +25,15 @@ func Index(response http.ResponseWriter, request *http.Request) {
     msisdn, err := getMsisdn(request)
 
     if err != nil {
-        writeImage(response)
-        return
+        msisdnCookie, err := getCookieMsisdn(request)
+        if err != nil {
+            writeImage(response)
+            return
+        }
+
+        msisdn = msisdnCookie
+    } else {
+        setCookieMsisdn(response, msisdn)        
     }
 
     remoteIp := getRemoteIp(request)
@@ -54,7 +63,7 @@ func Index(response http.ResponseWriter, request *http.Request) {
 
         err = AddCampaignLog(db, campaignLog)
         if err != nil {
-            log.Fatal(err)
+            log.Println(err)
         }
     }
 
@@ -67,16 +76,37 @@ func Redirect(response http.ResponseWriter, request *http.Request) {
     campaignName, err := getCampaignName(request)
     
     if err != nil {
-        log.Fatal(err)
+        log.Println(err)
+        
+        http.Error(response, err.Error(), http.StatusBadRequest)
+        return
     }
 
     backUrl, err := getBackUrl(request)
     
     if err != nil {
-        log.Fatal(err)
+        log.Println(err)
+
+        http.Error(response, err.Error(), http.StatusBadRequest)
+        return
     }
 
+    guid := getDefaultGuid()
     msisdn, err := getMsisdn(request)
+
+    if err != nil {
+
+        msisdnCookie, err := getCookieMsisdn(request)
+        if err != nil {
+            redirect(response, request, guid, backUrl)
+            return            
+        } else {
+            msisdn = msisdnCookie
+        }
+    } else {
+        setCookieMsisdn(response, msisdn)        
+    }
+
     remoteIp := getRemoteIp(request)
     userAgent := getUserAgent(request)
     referer := getReferer(request)
@@ -96,7 +126,10 @@ func Redirect(response http.ResponseWriter, request *http.Request) {
     campaign, err := GetCampaignByName(db, campaignName)
 
     if err != nil {
-        log.Fatal(err)
+        log.Println(err)
+
+        http.Error(response, "Partner Not Found", http.StatusBadRequest)
+        return
     
     } else {
 
@@ -104,26 +137,17 @@ func Redirect(response http.ResponseWriter, request *http.Request) {
 
         err = AddCampaignLog(db, campaignLog)
         if err != nil {
-            log.Fatal(err)
+            log.Println(err)
         }
-    }
-
-    var defaultGuid string = getDefaultGuid()
-
-    if err != nil {
-        redirect(response, request, defaultGuid, backUrl)
-        return
-    }    
+    }   
 
     defcode, err := GetDefcodeByMsisdn(db, msisdn)
-    
-    if err != nil {
-        uuid := defaultGuid
-    } else {
-        uuid := defcode.Uuid    
+
+    if err == nil {        
+        guid = defcode.Uuid    
     }
 
-    redirect(response, request, uuid, backUrl)
+    redirect(response, request, guid, backUrl)
 }
 
 
@@ -141,9 +165,9 @@ func redirect(response http.ResponseWriter, request *http.Request, uuid string, 
     timestamp := getUnixTimestamp()
 
     backUrl = strings.Replace(backUrl, "$UUID", uuid, 1)
-    backUrl = strings.Replace(backUrl, "$RND", string(timestamp), 1)
+    backUrl = strings.Replace(backUrl, "$RND", strconv.Itoa(timestamp), 1)
 
-    http.Redirect(response, request, backUrl, 301)
+    http.Redirect(response, request, backUrl, 302)
 }
 
 func getBackUrl(request *http.Request) (string, error) {
@@ -168,7 +192,7 @@ func getCampaignName(request *http.Request) (string, error) {
 
 func getMsisdn(request *http.Request) (string, error) {
     msisdn := request.Header.Get("X-Nokia-MSISDN")
-    msisdnValid := request.Header.Get("X-MSISDN-VALID")
+    msisdnValid := request.Header.Get("X-MSISDN-VALID")    
 
     if msisdnValid == "YES" && msisdn != "" {
         return msisdn, nil
