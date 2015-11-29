@@ -74,6 +74,7 @@ func Redirect(response http.ResponseWriter, request *http.Request) {
     campaignLog, err := getCampaingLog(request, response)
     if err != nil {
         redirect(response, request, guid, backUrl)
+        return
     }
 
     db := GetConnection()
