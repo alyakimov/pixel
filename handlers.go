@@ -21,33 +21,11 @@ func Index(response http.ResponseWriter, request *http.Request) {
         writeImage(response)
         return
     }
-        
-    msisdn, err := getMsisdn(request)
 
+    campaignLog, err := getCampaingLog(request, response)
     if err != nil {
-        msisdnCookie, err := getCookieMsisdn(request)
-        if err != nil {
-            writeImage(response)
-            return
-        }
-
-        msisdn = msisdnCookie
-    } else {
-        setCookieMsisdn(response, msisdn)        
-    }
-
-    remoteIp := getRemoteIp(request)
-    userAgent := getUserAgent(request)
-    referer := getReferer(request)
-    uuid, _ := getUuid(request)
-
-    campaignLog := CampaignLog{
-        CampaignId: 0, 
-        Uuid: uuid, 
-        Msisdn: msisdn, 
-        RemoteIp: remoteIp, 
-        UserAgent: userAgent, 
-        Referer: referer,
+        writeImage(response)
+        return
     }
 
     db := GetConnection()
@@ -92,33 +70,10 @@ func Redirect(response http.ResponseWriter, request *http.Request) {
     }
 
     guid := getDefaultGuid()
-    msisdn, err := getMsisdn(request)
-
+    
+    campaignLog, err := getCampaingLog(request, response)
     if err != nil {
-
-        msisdnCookie, err := getCookieMsisdn(request)
-        if err != nil {
-            redirect(response, request, guid, backUrl)
-            return            
-        } else {
-            msisdn = msisdnCookie
-        }
-    } else {
-        setCookieMsisdn(response, msisdn)        
-    }
-
-    remoteIp := getRemoteIp(request)
-    userAgent := getUserAgent(request)
-    referer := getReferer(request)
-    uuid, _ := getUuid(request)
-
-    campaignLog := CampaignLog{
-        CampaignId: 0, 
-        Uuid: uuid, 
-        Msisdn: msisdn, 
-        RemoteIp: remoteIp, 
-        UserAgent: userAgent, 
-        Referer: referer,
+        redirect(response, request, guid, backUrl)
     }
 
     db := GetConnection()
@@ -141,7 +96,7 @@ func Redirect(response http.ResponseWriter, request *http.Request) {
         }
     }   
 
-    defcode, err := GetDefcodeByMsisdn(db, msisdn)
+    defcode, err := GetDefcodeByMsisdn(db, campaignLog.Msisdn)
 
     if err == nil {        
         guid = defcode.Uuid    
@@ -236,5 +191,38 @@ func getUuid(request *http.Request) (string, error) {
 
 func getDefaultGuid() string {
     return "...................."
+}
+
+func getCampaingLog(request *http.Request, response http.ResponseWriter) (CampaignLog, error) {
+
+    msisdn, err := getMsisdn(request)
+
+    if err != nil {
+
+        msisdnCookie, err := getCookieMsisdn(request)
+        if err != nil {            
+            return nil, err       
+        } else {
+            msisdn = msisdnCookie
+        }
+    } else {
+        setCookieMsisdn(response, msisdn)        
+    }
+
+    remoteIp := getRemoteIp(request)
+    userAgent := getUserAgent(request)
+    referer := getReferer(request)
+    uuid, _ := getUuid(request)
+
+    campaignLog := CampaignLog{
+        CampaignId: 0, 
+        Uuid: uuid, 
+        Msisdn: msisdn, 
+        RemoteIp: remoteIp, 
+        UserAgent: userAgent, 
+        Referer: referer,
+    }
+
+    return campaignLog, nil
 }
 
