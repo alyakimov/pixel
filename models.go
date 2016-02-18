@@ -3,7 +3,9 @@ package main
 
 import (
     "time"
+    "os"
     "database/sql"
+    "encoding/json"    
 )
 
 type Campaign struct {
@@ -17,12 +19,12 @@ type Campaign struct {
 
 
 type CampaignLog struct {
-    CampaignId int
-    Uuid string
-    Msisdn string
-    RemoteIp string
-    UserAgent string
-    Referer string
+    CampaignId  int     `json:"campaignId"`
+    Uuid        string  `json:"uuid"`
+    Msisdn      string  `json:"msisdn"`
+    RemoteIp    string  `json:"remoteIp"`
+    UserAgent   string  `json:"userAgent"`
+    Referer     string  `json:"referer"`
 }
 
 
@@ -41,7 +43,7 @@ func GetCampaignByName(db *sql.DB, name string) (*Campaign, error) {
     return &retval, err
 }
 
-func AddCampaignLog(db *sql.DB, campaignLog CampaignLog) error {
+func AddCampaignLog(db *sql.DB, campaignLog *CampaignLog) error {
     const query = "INSERT INTO campaigns_log (campaign_id, uuid, msisdn, remote_ip, user_agent, referer, created) VALUES (?, ?, ?, ?, ?, ?, NOW())"
 
     stmt, err := db.Prepare(query)
@@ -59,6 +61,27 @@ func AddCampaignLog(db *sql.DB, campaignLog CampaignLog) error {
     )
 
     return err
+}
+
+func AddCampaignLogIntoFile(filename string, campaignLog *CampaignLog) error {
+    
+    data, err := json.Marshal(campaignLog)
+
+    if err != nil {
+        return err
+    }
+
+    f, err := os.OpenFile(filename, os.O_APPEND|os.O_WRONLY, 0600)
+    if err != nil {
+        return err
+    }
+
+    defer f.Close()
+
+    _, err = f.WriteString(string(data) + "'\n")
+
+    return err
+
 }
 
 func GetDefcodeByMsisdn(db *sql.DB, msisdn string) (*Defcode, error) {

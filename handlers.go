@@ -9,6 +9,7 @@ import (
     "strings"
     "net/http"
     "encoding/base64"
+    "github.com/spf13/viper"
 )
 
 
@@ -39,7 +40,9 @@ func Index(response http.ResponseWriter, request *http.Request) {
 
         campaignLog.CampaignId = campaign.Id
 
-        err = AddCampaignLog(db, campaignLog)
+        filename := getLogFileName()
+
+        err = AddCampaignLogIntoFile(filename, campaignLog)
         if err != nil {
             log.Println(err)
         }
@@ -194,7 +197,7 @@ func getDefaultGuid() string {
     return "...................."
 }
 
-func getCampaingLog(request *http.Request, response http.ResponseWriter) (CampaignLog, error) {
+func getCampaingLog(request *http.Request, response http.ResponseWriter) (*CampaignLog, error) {
 
     msisdn, err := getMsisdn(request)
 
@@ -215,7 +218,7 @@ func getCampaingLog(request *http.Request, response http.ResponseWriter) (Campai
     referer := getReferer(request)
     uuid, _ := getUuid(request)
 
-    campaignLog := CampaignLog{
+    campaignLog := &CampaignLog{
         CampaignId: 0, 
         Uuid: uuid, 
         Msisdn: msisdn, 
@@ -225,5 +228,11 @@ func getCampaingLog(request *http.Request, response http.ResponseWriter) (Campai
     }
 
     return campaignLog, nil
+}
+
+func getLogFileName() string {
+    filename := viper.GetString("logging.filename")
+
+    return filename
 }
 
