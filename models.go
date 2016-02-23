@@ -8,13 +8,14 @@ import (
     "encoding/json"    
 )
 
+
 type Campaign struct {
-    Id int
-    PartnerId int
-    Name string
-    Status int
-    Created time.Time
-    Updated time.Time
+    Id          int
+    PartnerId   int
+    Name        string
+    Status      int
+    Created     time.Time
+    Updated     time.Time
 }
 
 
@@ -29,8 +30,8 @@ type CampaignLog struct {
 
 
 type Defcode struct {
-    Msisdn int
-    Uuid string
+    Msisdn  int
+    Uuid    string
 }
 
 
@@ -39,6 +40,15 @@ func GetCampaignByName(db *sql.DB, name string) (*Campaign, error) {
 
     var retval Campaign
     err := db.QueryRow(query, name).Scan(&retval.Id, &retval.PartnerId, &retval.Name, &retval.Status, &retval.Created, &retval.Updated)    
+
+    return &retval, err
+}
+
+func GetDefcodeByMsisdn(db *sql.DB, msisdn string) (*Defcode, error) {
+    const query = "SELECT uuid, msisdn FROM defcodes where msisdn = ?"
+
+    var retval Defcode
+    err := db.QueryRow(query, msisdn).Scan(&retval.Uuid, &retval.Msisdn)    
 
     return &retval, err
 }
@@ -63,7 +73,7 @@ func AddCampaignLog(db *sql.DB, campaignLog *CampaignLog) error {
     return err
 }
 
-func AddCampaignLogIntoFile(filename string, campaignLog *CampaignLog) error {
+func WriteCampaignLog(filename string, campaignLog *CampaignLog) error {
     
     data, err := json.Marshal(campaignLog)
 
@@ -83,13 +93,3 @@ func AddCampaignLogIntoFile(filename string, campaignLog *CampaignLog) error {
     return err
 
 }
-
-func GetDefcodeByMsisdn(db *sql.DB, msisdn string) (*Defcode, error) {
-    const query = "SELECT uuid, msisdn FROM defcodes where msisdn = ?"
-
-    var retval Defcode
-    err := db.QueryRow(query, msisdn).Scan(&retval.Uuid, &retval.Msisdn)    
-
-    return &retval, err
-}
-

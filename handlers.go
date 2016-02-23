@@ -42,7 +42,7 @@ func Index(response http.ResponseWriter, request *http.Request) {
 
         filename := getLogFileName()
 
-        err = AddCampaignLogIntoFile(filename, campaignLog)
+        err = WriteCampaignLog(filename, campaignLog)
         if err != nil {
             log.Println(err)
         }
@@ -94,7 +94,9 @@ func Redirect(response http.ResponseWriter, request *http.Request) {
 
         campaignLog.CampaignId = campaign.Id
 
-        err = AddCampaignLog(db, campaignLog)
+        filename := getLogFileName()
+
+        err = WriteCampaignLog(filename, campaignLog)
         if err != nil {
             log.Println(err)
         }
