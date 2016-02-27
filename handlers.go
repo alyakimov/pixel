@@ -114,7 +114,7 @@ func writeImage(response http.ResponseWriter){
 func redirect(response http.ResponseWriter, request *http.Request, uuid string, backUrl string) {
     timestamp := getUnixTimestamp()
 
-    backUrl = strings.Replace(backUrl, "$UUID", uuid, 1)
+    backUrl = strings.Replace(backUrl, "$UID", uuid, 1)
     backUrl = strings.Replace(backUrl, "$RND", strconv.Itoa(timestamp), 1)
 
     http.Redirect(response, request, backUrl, 302)
@@ -169,7 +169,15 @@ func setCookieMsisdn(response http.ResponseWriter, value string){
 }
 
 func getRemoteIp(request *http.Request) string {
-    remoteIp := strings.Split(request.RemoteAddr, ":")[0]
+    xForwardFor := request.Header.Get("X-Forwarded-For")
+
+    var remoteIp string
+    if xForwardFor != "" {
+        remoteIp = strings.Split(xForwardFor, ",")[0]
+    } else {
+        remoteIp = strings.Split(request.RemoteAddr, ":")[0]
+    }
+
     return remoteIp
 }
 
