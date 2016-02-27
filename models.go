@@ -49,6 +49,8 @@ func AddCampaignLog(db *sql.DB, campaignLog *CampaignLog) error {
         return err
     }
 
+    defer stmt.Close()
+
     _, err = stmt.Exec(
         campaignLog.CampaignId,
         campaignLog.Uuid,
