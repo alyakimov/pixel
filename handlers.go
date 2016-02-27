@@ -88,7 +88,7 @@ func Redirect(response http.ResponseWriter, request *http.Request) {
 
         campaignLog.CampaignId = campaign.Id
 
-        go AddCampaignLog(db, campaignLog)        
+        go AddCampaignLog(db, campaignLog)
     }
 
     defcode, err := GetDefcodeByMsisdn(db, campaignLog.Msisdn)
@@ -121,12 +121,19 @@ func redirect(response http.ResponseWriter, request *http.Request, uuid string, 
 }
 
 func getBackUrl(request *http.Request) (string, error) {
-    backUrl := request.FormValue("back_url")
+    backUrl := request.FormValue("backurl")
 
     if len(backUrl) > 0 {
         return backUrl, nil
     } else {
-        return "", errors.New("Invalid Back Url")
+
+        backUrl = request.FormValue("back_url")
+
+        if len(backUrl) > 0 {
+            return backUrl, nil
+        } else {
+            return "", errors.New("Invalid Back Url")
+        }
     }
 }
 
