@@ -36,12 +36,12 @@ func GetCampaignByName(db *sql.DB, name string) (*Campaign, error) {
     const query = "SELECT id, partner_id, name, status, created, updated FROM campaigns where status = 1 AND name = ?"
 
     var retval Campaign
-    err := db.QueryRow(query, name).Scan(&retval.Id, &retval.PartnerId, &retval.Name, &retval.Status, &retval.Created, &retval.Updated)    
+    err := db.QueryRow(query, name).Scan(&retval.Id, &retval.PartnerId, &retval.Name, &retval.Status, &retval.Created, &retval.Updated)
 
     return &retval, err
 }
 
-func AddCampaignLog(db *sql.DB, campaignLog CampaignLog) error {
+func AddCampaignLog(db *sql.DB, campaignLog *CampaignLog) error {
     const query = "INSERT INTO campaigns_log (campaign_id, uuid, msisdn, remote_ip, user_agent, referer, created) VALUES (?, ?, ?, ?, ?, ?, NOW())"
 
     stmt, err := db.Prepare(query)
@@ -50,11 +50,11 @@ func AddCampaignLog(db *sql.DB, campaignLog CampaignLog) error {
     }
 
     _, err = stmt.Exec(
-        campaignLog.CampaignId, 
-        campaignLog.Uuid, 
-        campaignLog.Msisdn, 
-        campaignLog.RemoteIp, 
-        campaignLog.UserAgent, 
+        campaignLog.CampaignId,
+        campaignLog.Uuid,
+        campaignLog.Msisdn,
+        campaignLog.RemoteIp,
+        campaignLog.UserAgent,
         campaignLog.Referer,
     )
 
@@ -65,8 +65,7 @@ func GetDefcodeByMsisdn(db *sql.DB, msisdn string) (*Defcode, error) {
     const query = "SELECT uuid, msisdn FROM defcodes where msisdn = ?"
 
     var retval Defcode
-    err := db.QueryRow(query, msisdn).Scan(&retval.Uuid, &retval.Msisdn)    
+    err := db.QueryRow(query, msisdn).Scan(&retval.Uuid, &retval.Msisdn)
 
     return &retval, err
 }
-

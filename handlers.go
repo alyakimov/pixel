@@ -3,7 +3,7 @@ package main
 
 import (
     "io"
-    "log"    
+    "log"
     "errors"
     "strconv"
     "strings"
@@ -12,10 +12,10 @@ import (
 )
 
 
-func Index(response http.ResponseWriter, request *http.Request) {	
+func Index(response http.ResponseWriter, request *http.Request) {
 
     campaignName, err := getCampaignName(request)
-    
+
     if err != nil {
         log.Println(err)
         writeImage(response)
@@ -34,15 +34,12 @@ func Index(response http.ResponseWriter, request *http.Request) {
 
     if err != nil {
         log.Println(err)
-    
+
     } else {
 
         campaignLog.CampaignId = campaign.Id
 
-        err = AddCampaignLog(db, campaignLog)
-        if err != nil {
-            log.Println(err)
-        }
+        go AddCampaignLog(db, campaignLog)
     }
 
     writeImage(response)
@@ -50,18 +47,18 @@ func Index(response http.ResponseWriter, request *http.Request) {
 
 
 func Redirect(response http.ResponseWriter, request *http.Request) {
-    
+
     campaignName, err := getCampaignName(request)
-    
+
     if err != nil {
         log.Println(err)
-        
+
         http.Error(response, err.Error(), http.StatusBadRequest)
         return
     }
 
     backUrl, err := getBackUrl(request)
-    
+
     if err != nil {
         log.Println(err)
 
@@ -70,7 +67,7 @@ func Redirect(response http.ResponseWriter, request *http.Request) {
     }
 
     guid := getDefaultGuid()
-    
+
     campaignLog, err := getCampaingLog(request, response)
     if err != nil {
         redirect(response, request, guid, backUrl)
@@ -86,21 +83,18 @@ func Redirect(response http.ResponseWriter, request *http.Request) {
 
         http.Error(response, "Partner Not Found", http.StatusBadRequest)
         return
-    
+
     } else {
 
         campaignLog.CampaignId = campaign.Id
 
-        err = AddCampaignLog(db, campaignLog)
-        if err != nil {
-            log.Println(err)
-        }
-    }   
+        go AddCampaignLog(db, campaignLog)        
+    }
 
     defcode, err := GetDefcodeByMsisdn(db, campaignLog.Msisdn)
 
-    if err == nil {        
-        guid = defcode.Uuid    
+    if err == nil {
+        guid = defcode.Uuid
     }
 
     redirect(response, request, guid, backUrl)
@@ -148,7 +142,7 @@ func getCampaignName(request *http.Request) (string, error) {
 
 func getMsisdn(request *http.Request) (string, error) {
     msisdn := request.Header.Get("X-Nokia-MSISDN")
-    msisdnValid := request.Header.Get("X-MSISDN-VALID")    
+    msisdnValid := request.Header.Get("X-MSISDN-VALID")
 
     if msisdnValid == "YES" && msisdn != "" {
         return msisdn, nil
@@ -158,7 +152,7 @@ func getMsisdn(request *http.Request) (string, error) {
 }
 
 func getCookieMsisdn(request *http.Request) (string, error){
-    cookieMsisdn, err := GetSecretCookie(request, "msisdn") 
+    cookieMsisdn, err := GetSecretCookie(request, "msisdn")
 
     return cookieMsisdn, err
 }
@@ -182,7 +176,7 @@ func getReferer(request *http.Request) string {
 
 func getUuid(request *http.Request) (string, error) {
     uuid := request.FormValue("uuid")
-    
+
     if uuid != "" {
         return uuid, nil
     } else {
@@ -194,20 +188,20 @@ func getDefaultGuid() string {
     return "...................."
 }
 
-func getCampaingLog(request *http.Request, response http.ResponseWriter) (CampaignLog, error) {
+func getCampaingLog(request *http.Request, response http.ResponseWriter) (*CampaignLog, error) {
 
     msisdn, err := getMsisdn(request)
 
     if err != nil {
 
         msisdnCookie, err := getCookieMsisdn(request)
-        if err != nil {            
-            return nil, err       
+        if err != nil {
+            return nil, err
         } else {
             msisdn = msisdnCookie
         }
     } else {
-        setCookieMsisdn(response, msisdn)        
+        setCookieMsisdn(response, msisdn)
     }
 
     remoteIp := getRemoteIp(request)
@@ -215,15 +209,14 @@ func getCampaingLog(request *http.Request, response http.ResponseWriter) (Campai
     referer := getReferer(request)
     uuid, _ := getUuid(request)
 
-    campaignLog := CampaignLog{
-        CampaignId: 0, 
-        Uuid: uuid, 
-        Msisdn: msisdn, 
-        RemoteIp: remoteIp, 
-        UserAgent: userAgent, 
+    campaignLog := &CampaignLog{
+        CampaignId: 0,
+        Uuid: uuid,
+        Msisdn: msisdn,
+        RemoteIp: remoteIp,
+        UserAgent: userAgent,
         Referer: referer,
     }
 
     return campaignLog, nil
 }
-
