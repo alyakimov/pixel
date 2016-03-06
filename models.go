@@ -7,23 +7,23 @@ import (
 )
 
 type Campaign struct {
-	Id        string    `json:"id" bson:"_id,omitempty"`
-	PartnerId int       `json:"partnerId" bson:"partnerId"`
-	Name      string    `json:"name" bson:"name"`
-	Status    int       `json:"status" bson:"status"`
-	Created   time.Time `json:"created" bson:"created"`
-	Updated   time.Time `json:"updated" bson:"updated"`
+	Id        bson.ObjectId `json:"id" bson:"_id,omitempty"`
+	PartnerId bson.ObjectId `json:"partnerId" bson:"partnerId"`
+	Name      string        `json:"name" bson:"name"`
+	Status    int           `json:"status" bson:"status"`
+	Created   time.Time     `json:"created" bson:"created"`
+	Updated   time.Time     `json:"updated" bson:"updated"`
 }
 
 type CampaignLog struct {
-	Id         string    `json:"id" bson:"_id,omitempty"`
-	CampaignId string    `json:"campaignId" bson:"campaignId"`
-	Uuid       string    `json:"uuid" bson:"uuid"`
-	Msisdn     string    `json:"msisdn" bson:"msisdn"`
-	RemoteIp   string    `json:"remoteIp" bson:"remoteIp"`
-	UserAgent  string    `json:"userAgent" bson:"userAgent"`
-	Referer    string    `json:"referer" bson:"referer"`
-	Created    time.Time `json:"created" bson:"created"`
+	Id         bson.ObjectId `json:"id" bson:"_id,omitempty"`
+	CampaignId bson.ObjectId `json:"campaignId" bson:"campaignId"`
+	Uuid       string        `json:"uuid" bson:"uuid"`
+	Msisdn     string        `json:"msisdn" bson:"msisdn"`
+	RemoteIp   string        `json:"remoteIp" bson:"remoteIp"`
+	UserAgent  string        `json:"userAgent" bson:"userAgent"`
+	Referer    string        `json:"referer" bson:"referer"`
+	Created    time.Time     `json:"created" bson:"created"`
 }
 
 type Defcode struct {
