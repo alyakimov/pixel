@@ -17,7 +17,7 @@ type Campaign struct {
 
 type CampaignLog struct {
 	Id         string    `json:"id" bson:"_id,omitempty"`
-	CampaignId int       `json:"campaignId" bson:"campaignId"`
+	CampaignId string    `json:"campaignId" bson:"campaignId"`
 	Uuid       string    `json:"uuid" bson:"uuid"`
 	Msisdn     string    `json:"msisdn" bson:"msisdn"`
 	RemoteIp   string    `json:"remoteIp" bson:"remoteIp"`
@@ -37,7 +37,7 @@ func GetCampaignByName(db *mgo.Session, name string) (*Campaign, error) {
 	defer session.Close()
 
 	campaign := Campaign{}
-	campaigns := session.Db("test").C("campaigns")
+	campaigns := session.DB("test").C("campaigns")
 	err := campaigns.Find(bson.M{"status": 1, "name": name}).One(&campaign)
 
 	return &campaign, err
@@ -47,8 +47,8 @@ func AddCampaignLog(db *mgo.Session, campaignLog *CampaignLog) error {
 	session := db.Copy()
 	defer session.Close()
 
-	campaignsLog := session.Db("test").C("campaigns_log")
-	err = campaignsLog.Insert(&campaignLog)
+	campaignsLog := session.DB("test").C("campaigns_log")
+	err := campaignsLog.Insert(&campaignLog)
 
 	return err
 }
@@ -58,7 +58,7 @@ func GetDefcodeByMsisdn(db *mgo.Session, msisdn string) (*Defcode, error) {
 	defer session.Close()
 
 	defcode := Defcode{}
-	defcodes := session.Db("test").C("defcodes")
+	defcodes := session.DB("test").C("defcodes")
 	err := defcodes.Find(bson.M{"msisdn": msisdn}).One(&defcode)
 
 	return &defcode, err

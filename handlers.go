@@ -222,7 +222,7 @@ func getCampaingLog(request *http.Request, response http.ResponseWriter) (*Campa
 	uuid, _ := getUuid(request)
 
 	campaignLog := &CampaignLog{
-		CampaignId: 0,
+		CampaignId: "",
 		Uuid:       uuid,
 		Msisdn:     msisdn,
 		RemoteIp:   remoteIp,
