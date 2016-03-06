@@ -1,26 +1,24 @@
 package main
 
-
 import (
-    "fmt"
-    "log"
-    "net/http"
-    "github.com/spf13/viper"
+	"fmt"
+	"github.com/spf13/viper"
+	"log"
+	"net/http"
 )
-
 
 func main() {
 
-    viper.SetConfigName("onepixel")
-    viper.SetConfigType("yaml")
-    viper.AddConfigPath(".")
-    
-    err := viper.ReadInConfig()
-    if err != nil {
-        panic(fmt.Errorf("Fatal error config file: %s \n", err))
-    }      
+	viper.SetConfigName("onepixel")
+	viper.SetConfigType("yaml")
+	viper.AddConfigPath(".")
 
-    router := NewRouter()
+	err := viper.ReadInConfig()
+	if err != nil {
+		panic(fmt.Errorf("Fatal error config file: %s \n", err))
+	}
 
-    log.Fatal(http.ListenAndServe(viper.GetString("port"), router))
+	router := NewRouter()
+
+	log.Fatal(http.ListenAndServe(viper.GetString("port"), router))
 }

@@ -1,73 +1,65 @@
 package main
 
-
 import (
-    "time"
-    "database/sql"
+	"gopkg.in/mgo.v2"
+	"gopkg.in/mgo.v2/bson"
+	"time"
 )
 
 type Campaign struct {
-    Id int
-    PartnerId int
-    Name string
-    Status int
-    Created time.Time
-    Updated time.Time
+	Id        string    `json:"id" bson:"_id,omitempty"`
+	PartnerId int       `json:"partnerId" bson:"partnerId"`
+	Name      string    `json:"name" bson:"name"`
+	Status    int       `json:"status" bson:"status"`
+	Created   time.Time `json:"created" bson:"created"`
+	Updated   time.Time `json:"updated" bson:"updated"`
 }
-
 
 type CampaignLog struct {
-    CampaignId int
-    Uuid string
-    Msisdn string
-    RemoteIp string
-    UserAgent string
-    Referer string
+	Id         string    `json:"id" bson:"_id,omitempty"`
+	CampaignId int       `json:"campaignId" bson:"campaignId"`
+	Uuid       string    `json:"uuid" bson:"uuid"`
+	Msisdn     string    `json:"msisdn" bson:"msisdn"`
+	RemoteIp   string    `json:"remoteIp" bson:"remoteIp"`
+	UserAgent  string    `json:"userAgent" bson:"userAgent"`
+	Referer    string    `json:"referer" bson:"referer"`
+	Created    time.Time `json:"created" bson:"created"`
 }
-
 
 type Defcode struct {
-    Msisdn int
-    Uuid string
+	Msisdn int    `json:"msisdn" bson:"msisdn"`
+	Uuid   string `json:"uuid" bson:"uuid"`
 }
 
+func GetCampaignByName(db *mgo.Session, name string) (*Campaign, error) {
 
-func GetCampaignByName(db *sql.DB, name string) (*Campaign, error) {
-    const query = "SELECT id, partner_id, name, status, created, updated FROM campaigns where status = 1 AND name = ?"
+	session := db.Copy()
+	defer session.Close()
 
-    var retval Campaign
-    err := db.QueryRow(query, name).Scan(&retval.Id, &retval.PartnerId, &retval.Name, &retval.Status, &retval.Created, &retval.Updated)
+	campaign := Campaign{}
+	campaigns := session.Db("test").C("campaigns")
+	err := campaigns.Find(bson.M{"status": 1, "name": name}).One(&campaign)
 
-    return &retval, err
+	return &campaign, err
 }
 
-func AddCampaignLog(db *sql.DB, campaignLog *CampaignLog) error {
-    const query = "INSERT INTO campaigns_log (campaign_id, uuid, msisdn, remote_ip, user_agent, referer, created) VALUES (?, ?, ?, ?, ?, ?, NOW())"
+func AddCampaignLog(db *mgo.Session, campaignLog *CampaignLog) error {
+	session := db.Copy()
+	defer session.Close()
 
-    stmt, err := db.Prepare(query)
-    if err != nil {
-        return err
-    }
+	campaignsLog := session.Db("test").C("campaigns_log")
+	err = campaignsLog.Insert(&campaignLog)
 
-    defer stmt.Close()
-
-    _, err = stmt.Exec(
-        campaignLog.CampaignId,
-        campaignLog.Uuid,
-        campaignLog.Msisdn,
-        campaignLog.RemoteIp,
-        campaignLog.UserAgent,
-        campaignLog.Referer,
-    )
-
-    return err
+	return err
 }
 
-func GetDefcodeByMsisdn(db *sql.DB, msisdn string) (*Defcode, error) {
-    const query = "SELECT uuid, msisdn FROM defcodes where msisdn = ?"
+func GetDefcodeByMsisdn(db *mgo.Session, msisdn string) (*Defcode, error) {
+	session := db.Copy()
+	defer session.Close()
 
-    var retval Defcode
-    err := db.QueryRow(query, msisdn).Scan(&retval.Uuid, &retval.Msisdn)
+	defcode := Defcode{}
+	defcodes := session.Db("test").C("defcodes")
+	err := defcodes.Find(bson.M{"msisdn": msisdn}).One(&defcode)
 
-    return &retval, err
+	return &defcode, err
 }

@@ -1,38 +1,39 @@
 package main
 
-
 import (
-    "log"
-    "database/sql"
-    "github.com/spf13/viper"
-    _ "github.com/go-sql-driver/mysql"
+	"github.com/spf13/viper"
+	"gopkg.in/mgo.v2"
+	"log"
+	"time"
 )
 
+var db *mgo.Session = nil
 
-var db *sql.DB = nil
+func GetConnection() *mgo.Session {
 
+	if db != nil {
+		return db
 
-func GetConnection() *sql.DB {
+	} else {
 
-    if db != nil {
-        return db
-    
-    } else {
-        
-        var err error        
-        db, err = sql.Open("mysql", viper.GetString("connections.onepixel.dsl"))
+		var err error
 
-        if err != nil {
-            log.Fatalf("Error on initializing database connection: %s", err.Error())
-        }
+		mongoDBDialInfo := &mgo.DialInfo{
+			Addrs:    []string{viper.GetString("connections.mongo.hosts")},
+			Timeout:  60 * time.Second,
+			Database: viper.GetString("connections.mongo.auth_database"),
+			Username: viper.GetString("connections.mongo.auth_user_name"),
+			Password: viper.GetString("connections.mongo.auth_password"),
+		}
 
-        db.SetMaxIdleConns(viper.GetInt("connections.onepixel.maxIdleConnection"))
+		db, err := mgo.DialWithInfo(mongoDBDialInfo)
 
-        err = db.Ping()
-        if err != nil {
-            log.Fatalf("Error on opening database connection: %s", err.Error())
-        }
+		if err != nil {
+			log.Fatalf("Error on initializing database connection: %s", err.Error())
+		}
 
-        return db
-    }
+		db.SetMode(mgo.Monotonic, true)
+
+		return db
+	}
 }
