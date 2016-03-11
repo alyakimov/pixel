@@ -32,7 +32,6 @@ type Defcode struct {
 }
 
 func GetCampaignByName(db *mgo.Session, name string) (*Campaign, error) {
-
 	session := db.Copy()
 	defer session.Close()
 

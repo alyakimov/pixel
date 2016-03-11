@@ -26,7 +26,7 @@ func GetConnection() *mgo.Session {
 			// Password: viper.GetString("connections.mongo.auth_password"),
 		}
 
-		db, err := mgo.DialWithInfo(mongoDBDialInfo)
+		db, err = mgo.DialWithInfo(mongoDBDialInfo)
 
 		if err != nil {
 			log.Fatalf("Error on initializing database connection: %s", err.Error())
