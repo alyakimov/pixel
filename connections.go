@@ -21,9 +21,9 @@ func GetConnection() *mgo.Session {
 		mongoDBDialInfo := &mgo.DialInfo{
 			Addrs:   []string{viper.GetString("connections.mongo.hosts")},
 			Timeout: 60 * time.Second,
-			// Database: viper.GetString("connections.mongo.auth_database"),
-			// Username: viper.GetString("connections.mongo.auth_user_name"),
-			// Password: viper.GetString("connections.mongo.auth_password"),
+			Database: viper.GetString("connections.mongo.auth_database"),
+			Username: viper.GetString("connections.mongo.auth_user_name"),
+			Password: viper.GetString("connections.mongo.auth_password"),
 		}
 
 		db, err = mgo.DialWithInfo(mongoDBDialInfo)
