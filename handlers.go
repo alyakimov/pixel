@@ -4,7 +4,9 @@ package main
 import (
     "io"
     "log"
+    "fmt"
     "errors"
+    "regexp"
     "strconv"
     "strings"
     "net/http"
@@ -24,6 +26,7 @@ func Index(response http.ResponseWriter, request *http.Request) {
 
     campaignLog, err := getCampaingLog(request, response)
     if err != nil {
+        log.Println(err)
         writeImage(response)
         return
     }
@@ -133,7 +136,7 @@ func getBackUrl(request *http.Request) (string, error) {
         if len(backUrl) > 0 {
             return backUrl, nil
         } else {
-            return "", errors.New("Invalid Back Url")
+            return "", errors.New(fmt.Sprintf("Invalid Back Url: (%s)", backUrl))
         }
     }
 }
@@ -144,7 +147,7 @@ func getCampaignName(request *http.Request) (string, error) {
     if len(campaignName) > 0 {
         return campaignName, nil
     } else {
-        return "", errors.New("Invalid campaign name")
+        return "", errors.New(fmt.Sprintf("Invalid campaign name: (%s)", campaignName))
     }
 }
 
@@ -152,17 +155,21 @@ func getMsisdn(request *http.Request) (string, error) {
     msisdn := request.Header.Get("X-Nokia-MSISDN")
     msisdnValid := request.Header.Get("X-MSISDN-VALID")
 
-    if msisdnValid == "YES" && msisdn != "" {
+    if msisdnValid == "YES" && isMsisdn(msisdn) {
         return msisdn, nil
     } else {
-        return "", errors.New("Invalid msisdn header")
+        return "", errors.New(fmt.Sprintf("Invalid msisdn header, request (%s)", request))
     }
 }
 
 func getCookieMsisdn(request *http.Request) (string, error){
     cookieMsisdn, err := GetSecretCookie(request, "msisdn")
 
-    return cookieMsisdn, err
+    if !isMsisdn(cookieMsisdn) {
+        return "", errors.New(fmt.Sprintf("Invalid msisdn cookie: (%s)", cookieMsisdn))
+    } else {
+        return cookieMsisdn, err
+    }
 }
 
 func setCookieMsisdn(response http.ResponseWriter, value string){
@@ -235,4 +242,9 @@ func getCampaingLog(request *http.Request, response http.ResponseWriter) (*Campa
     }
 
     return campaignLog, nil
+}
+
+func isMsisdn(msisdn string) bool {
+    match, _ := regexp.MatchString("^([0-9]{11})$", msisdn)
+    return match
 }
