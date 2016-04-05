@@ -9,6 +9,7 @@ import (
     "regexp"
     "strconv"
     "strings"
+    "net/url"
     "net/http"
     "encoding/base64"
 )
@@ -116,10 +117,11 @@ func writeImage(response http.ResponseWriter){
 
 func redirect(response http.ResponseWriter, request *http.Request, uuid string, backUrl string) {
     timestamp := getUnixTimestamp()
+    referer := url.QueryEscape(getReferer(request))
 
     backUrl = strings.Replace(backUrl, "$UID", uuid, 1)
     backUrl = strings.Replace(backUrl, "$RND", strconv.Itoa(timestamp), 1)
-    backUrl = strings.Replace(backUrl, "$REFERER", getReferer(request), 1)
+    backUrl = strings.Replace(backUrl, "$REFERER", referer, 1)
 
     http.Redirect(response, request, backUrl, 302)
 }
