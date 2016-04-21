@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"github.com/spf13/viper"
 	"io"
 	"log"
 	"net/http"
@@ -44,7 +45,16 @@ func Index(response http.ResponseWriter, request *http.Request) {
 		go AddCampaignLog(db, campaignLog)
 	}
 
-	writeImage(response)
+	ratingGroupUrl := getRatingGroupUrl()
+	authPixelUrl := getAuthPixelUrl()
+
+	ratingGroupQuery := ratingGroupUrl.Query()
+	ratingGroupQuery.Set("back_url", authPixelUrl.String())
+	ratingGroupUrl.RawQuery = ratingGroupQuery.Encode()
+
+	backUrl := ratingGroupUrl.String()
+
+	http.Redirect(response, request, backUrl, 302)
 }
 
 func Redirect(response http.ResponseWriter, request *http.Request) {
@@ -71,7 +81,7 @@ func Redirect(response http.ResponseWriter, request *http.Request) {
 
 	campaignLog, err := getCampaingLog(request, response)
 	if err != nil {
-		redirect(response, request, guid, backUrl)
+		redirectToBackUrl(response, request, guid, backUrl)
 		return
 	}
 
@@ -98,7 +108,23 @@ func Redirect(response http.ResponseWriter, request *http.Request) {
 		guid = defcode.Uuid
 	}
 
-	redirect(response, request, guid, backUrl)
+	referer := url.QueryEscape(getReferer(request))
+	getCompleteBackUrl(guid, referer, backUrl)
+
+	ratingGroupUrl := getRatingGroupUrl()
+	authPixelRedirector := getAuthPixelRedirector()
+
+	authPixelQuery := authPixelRedirector.Query()
+	authPixelQuery.Set("backurl", backUrl)
+	authPixelRedirector.RawQuery = authPixelQuery.Encode()
+
+	ratingGroupQuery := ratingGroupUrl.Query()
+	ratingGroupQuery.Set("back_url", authPixelRedirector.String())
+	ratingGroupUrl.RawQuery = ratingGroupQuery.Encode()
+
+	backUrl = ratingGroupUrl.String()
+
+	http.Redirect(response, request, backUrl, 302)
 }
 
 func writeImage(response http.ResponseWriter) {
@@ -111,15 +137,50 @@ func writeImage(response http.ResponseWriter) {
 	io.WriteString(response, string(output))
 }
 
-func redirect(response http.ResponseWriter, request *http.Request, uuid string, backUrl string) {
-	timestamp := getUnixTimestamp()
+func redirectToBackUrl(response http.ResponseWriter, request *http.Request, uuid string, backUrl string) {
 	referer := url.QueryEscape(getReferer(request))
+	backUrl = getCompleteBackUrl(uuid, referer, backUrl)
+	http.Redirect(response, request, backUrl, 302)
+}
+
+func getCompleteBackUrl(uuid string, referer string, backUrl string) string {
+	timestamp := getUnixTimestamp()
 
 	backUrl = strings.Replace(backUrl, "$UID", uuid, 1)
 	backUrl = strings.Replace(backUrl, "$RND", strconv.Itoa(timestamp), 1)
 	backUrl = strings.Replace(backUrl, "$REFERER", referer, 1)
 
-	http.Redirect(response, request, backUrl, 302)
+	return backUrl
+}
+
+func getRatingGroupUrl() *url.URL {
+	u, err := url.Parse(viper.GetString("redirects.ratingGroupUrl"))
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return u
+}
+
+func getAuthPixelUrl() *url.URL {
+	u, err := url.Parse(viper.GetString("redirects.authPixelUrl"))
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return u
+}
+
+func getAuthPixelRedirector() *url.URL {
+	u, err := url.Parse(viper.GetString("redirects.authPixelRedirector"))
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return u
 }
 
 func getBackUrl(request *http.Request) (string, error) {
