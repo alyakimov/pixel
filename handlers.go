@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"github.com/spf13/viper"
 	"io"
 	"log"
 	"net/http"
@@ -163,6 +164,14 @@ func getMsisdn(request *http.Request) (string, error) {
 func getCookieMsisdn(request *http.Request) (string, error) {
 	cookieMsisdn, err := GetSecretCookie(request, "msisdn")
 
+	if cookieMsisdn == "" {
+		return "", errors.New("Empty msisdn cookie")
+	}
+
+	if len(cookieMsisdn) > 11 {
+		cookieMsisdn, _ = decrypt([]byte(viper.GetString("cookie.encryptionKey")), cookieMsisdn)
+	}
+
 	if !isMsisdn(cookieMsisdn) {
 		return "", errors.New(fmt.Sprintf("Invalid msisdn cookie: (%s)", cookieMsisdn))
 	} else {
@@ -171,6 +180,7 @@ func getCookieMsisdn(request *http.Request) (string, error) {
 }
 
 func setCookieMsisdn(response http.ResponseWriter, value string) {
+	value, _ = encrypt([]byte(viper.GetString("cookie.encryptionKey")), value)
 	SetSecretCookie(response, "msisdn", value)
 }
 

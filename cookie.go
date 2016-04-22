@@ -1,13 +1,17 @@
 package main
 
 import (
+	"crypto/aes"
+	"crypto/cipher"
 	"crypto/hmac"
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
 	"errors"
 	"fmt"
 	"github.com/spf13/viper"
+	"io"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -21,7 +25,7 @@ func SetSecretCookie(response http.ResponseWriter, name string, value string) {
 	version := viper.GetInt("cookie.version")
 	keyVersion := viper.GetInt("cookie.key_version")
 
-	expiration := time.Now().Add(365 * 24 * time.Hour)
+	expiration := time.Now().Add(90 * 24 * time.Hour)
 	signedValue, err := createSignedValue(secret, name, value, version, keyVersion)
 
 	if err == nil {
@@ -79,7 +83,7 @@ func formatField(value string) string {
 	return fmt.Sprintf("%d:%s", len(value), value)
 }
 
-func consumeField(s string) (string, string) {
+func consumeField(s string) (string, string, error) {
 
 	b := strings.SplitN(s, ":", 2)
 	length, rest := b[0], string(b[1])
@@ -88,23 +92,23 @@ func consumeField(s string) (string, string) {
 	fieldValue := rest[:n]
 
 	if rest[n:n+1] != "|" {
-		panic("malformed v2 signed value field")
+		return "", "", errors.New("malformed v2 signed value field")
 	}
 
 	rest = string(rest[n+1:])
 
-	return fieldValue, rest
+	return fieldValue, rest, nil
 }
 
 func decodeFieldsV2(value string) (int, string, string, string, string) {
 
 	rest := value[2:]
-	keyVersionStr, rest := consumeField(rest)
+	keyVersionStr, rest, _ := consumeField(rest)
 	keyVersion, _ := strconv.ParseInt(keyVersionStr, 10, 0)
 
-	timestamp, rest := consumeField(rest)
-	nameField, rest := consumeField(rest)
-	valueField, passedSign := consumeField(rest)
+	timestamp, rest, _ := consumeField(rest)
+	nameField, rest, _ := consumeField(rest)
+	valueField, passedSign, _ := consumeField(rest)
 
 	return int(keyVersion), timestamp, nameField, valueField, passedSign
 }
@@ -196,6 +200,49 @@ func createSignatureV2(secret string, message string) string {
 	h.Write([]byte(message))
 
 	return hex.EncodeToString(h.Sum(nil))
+}
+
+// encrypt string to base64 crypto using AES
+func encrypt(key []byte, text string) (string, error) {
+	plaintext := []byte(text)
+
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return "", err
+	}
+
+	ciphertext := make([]byte, aes.BlockSize+len(plaintext))
+	iv := ciphertext[:aes.BlockSize]
+	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
+		return "", err
+	}
+
+	stream := cipher.NewCFBEncrypter(block, iv)
+	stream.XORKeyStream(ciphertext[aes.BlockSize:], plaintext)
+
+	return base64.URLEncoding.EncodeToString(ciphertext), nil
+}
+
+// decrypt from base64 to decrypted string
+func decrypt(key []byte, cryptoText string) (string, error) {
+	ciphertext, _ := base64.URLEncoding.DecodeString(cryptoText)
+
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return "", err
+	}
+
+	if len(ciphertext) < aes.BlockSize {
+		return "", errors.New("ciphertext too short")
+	}
+	iv := ciphertext[:aes.BlockSize]
+	ciphertext = ciphertext[aes.BlockSize:]
+
+	stream := cipher.NewCFBDecrypter(block, iv)
+
+	stream.XORKeyStream(ciphertext, ciphertext)
+
+	return fmt.Sprintf("%s", ciphertext), nil
 }
 
 func getUnixTimestamp() int {
