@@ -31,11 +31,6 @@ func Index(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	if !isSaveMsisdn() {
-		writeImage(response)
-		return
-	}
-
 	_, err = GetCampaignByName(campaignName)
 
 	if err != nil {
@@ -70,11 +65,6 @@ func Redirect(response http.ResponseWriter, request *http.Request) {
 	campaignLog, err := getCampaingLog(request, response)
 	if err != nil {
 		redirect(response, request, guid, backUrl)
-		return
-	}
-
-	if !isSaveMsisdn() {
-		writeImage(response)
 		return
 	}
 
@@ -251,8 +241,4 @@ func getCampaingLog(request *http.Request, response http.ResponseWriter) (*Campa
 func isMsisdn(msisdn string) bool {
 	match, _ := regexp.MatchString("^([0-9]{11})$", msisdn)
 	return match
-}
-
-func isSaveMsisdn() bool {
-	return viper.GetBool("options.saveMsisdn")
 }
