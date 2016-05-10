@@ -24,7 +24,7 @@ func Index(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	campaignLog, err := getCampaingLog(request, response)
+	_, err = getCampaingLog(request, response)
 	if err != nil {
 		log.Println(err)
 		writeImage(response)
@@ -36,18 +36,10 @@ func Index(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	db := GetConnection()
-
-	campaign, err := GetCampaignByName(campaignName)
+	_, err = GetCampaignByName(campaignName)
 
 	if err != nil {
 		log.Println(err)
-
-	} else {
-
-		campaignLog.CampaignId = campaign.Id
-
-		go AddCampaignLog(db, campaignLog)
 	}
 
 	writeImage(response)
@@ -86,22 +78,16 @@ func Redirect(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	db := GetConnection()
-
-	campaign, err := GetCampaignByName(campaignName)
+	_, err = GetCampaignByName(campaignName)
 
 	if err != nil {
 		log.Println(err)
 
 		http.Error(response, "Partner Not Found", http.StatusBadRequest)
 		return
-
-	} else {
-
-		campaignLog.CampaignId = campaign.Id
-
-		go AddCampaignLog(db, campaignLog)
 	}
+
+	db := GetConnection()
 
 	defcode, err := GetDefcodeByMsisdn(db, campaignLog.Msisdn)
 
