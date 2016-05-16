@@ -29,7 +29,13 @@ func SetSecretCookie(response http.ResponseWriter, name string, value string) {
 	signedValue, err := createSignedValue(secret, name, value, version, keyVersion)
 
 	if err == nil {
-		cookie := http.Cookie{Name: name, Value: signedValue, Expires: expiration}
+		cookie := http.Cookie{
+			Name: name,
+			Value: signedValue,
+			Expires: expiration,
+			Path: "/",
+		}
+
 		http.SetCookie(response, &cookie)
 	}
 }
@@ -220,12 +226,12 @@ func encrypt(key []byte, text string) (string, error) {
 	stream := cipher.NewCFBEncrypter(block, iv)
 	stream.XORKeyStream(ciphertext[aes.BlockSize:], plaintext)
 
-	return base64.URLEncoding.EncodeToString(ciphertext), nil
+	return base64.StdEncoding.EncodeToString(ciphertext), nil
 }
 
 // decrypt from base64 to decrypted string
 func decrypt(key []byte, cryptoText string) (string, error) {
-	ciphertext, _ := base64.URLEncoding.DecodeString(cryptoText)
+	ciphertext, _ := base64.StdEncoding.DecodeString(cryptoText)
 
 	block, err := aes.NewCipher(key)
 	if err != nil {
